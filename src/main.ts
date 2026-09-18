@@ -1,8 +1,40 @@
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import {
+  MaxGridWindowAdjustmentDto,
+  MinimumBatteryReserveAdjustmentDto,
+  NoChargeWindowAdjustmentDto,
+  NoDischargeWindowAdjustmentDto,
+  SolarReductionAdjustmentDto,
+} from './energy/dto/structured-adjustment.dto';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('GridWise LLM API')
+    .setDescription(
+      'LLM-assisted operator directive interpretation and 24-hour campus energy optimization for the BUP CSE Fest 2026 preliminary round.',
+    )
+    .setVersion('1.0.0')
+    .addTag('health', 'Readiness probe')
+    .addTag('energy', 'Operator-note interpretation and energy optimization')
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig, {
+    extraModels: [
+      SolarReductionAdjustmentDto,
+      MinimumBatteryReserveAdjustmentDto,
+      NoChargeWindowAdjustmentDto,
+      NoDischargeWindowAdjustmentDto,
+      MaxGridWindowAdjustmentDto,
+    ],
+  });
+  SwaggerModule.setup('docs', app, document);
+
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('PORT', 3000);
+  await app.listen(port, '0.0.0.0');
 }
-bootstrap();
+void bootstrap();

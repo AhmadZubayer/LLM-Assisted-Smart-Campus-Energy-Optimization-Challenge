@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.git
+.env
+.env.*
+.npmrc
+*.log
+*.pem
+*.key
+.vscode
+.idea
+test
