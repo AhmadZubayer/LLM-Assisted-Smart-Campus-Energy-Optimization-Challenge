@@ -31,7 +31,13 @@ async function bootstrap() {
       MaxGridWindowAdjustmentDto,
     ],
   });
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, {
+    customCssUrl: 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.32.13/swagger-ui.css',
+    customJs: [
+      'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.32.13/swagger-ui-bundle.js',
+      'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.32.13/swagger-ui-standalone-preset.js',
+    ],
+  });
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
