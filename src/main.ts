@@ -39,6 +39,8 @@ async function bootstrap() {
     ],
   });
 
+  app.getHttpAdapter().get('/', (_req, res) => res.redirect('/docs'));
+
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port, '0.0.0.0');
