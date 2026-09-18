@@ -62,22 +62,38 @@ A successful response is HTTP 200 with `directive_interpretation`, a 24-entry
 `hourly_plan`, and `total_cost_bdt`/`total_grid_kwh`/`peak_grid_kwh` consistent
 with that plan.
 
-## Publish the completed application
+## Submitted fallback image
 
-Create a Docker Hub repository named gridwise that organizers can pull.
-Replace YOUR_DOCKERHUB_USERNAME below with your actual Docker Hub username.
-Publish only the version you intend to share; the image contains compiled code.
+This is the exact image submitted for the preliminary round:
+
+- **Registry:** Docker Hub
+- **Tag reference:** `ahmadzubayer/gridwise:preliminary-v2`
+- **Digest:** `sha256:b55cfe43384614335c28a06e7062cb928913ecafe2b184b0c4f4a45f705e8af9`
+- **Pinned reference (immutable):** `ahmadzubayer/gridwise@sha256:b55cfe43384614335c28a06e7062cb928913ecafe2b184b0c4f4a45f705e8af9`
+
+Pull and run it exactly like this:
+
+```sh
+docker pull ahmadzubayer/gridwise:preliminary-v2
+docker run --rm --name gridwise -p 3000:3000 --env-file .env ahmadzubayer/gridwise:preliminary-v2
+curl http://localhost:3000/health
+```
+
+**Verified end to end** by removing the local image entirely and pulling it back fresh (the same thing a judge does): the fresh pull resolved to the exact digest above, `docker inspect --format '{{.State.Health.Status}}'` reported `healthy`, `GET /health` returned `{"status":"ok"}`, `GET /` returned the landing page, and a real `POST /optimize-energy` against the organizer's SAMPLE-01 input returned the exact reference cost (38365 BDT). `docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}'` on the image confirms its baked-in `ENV` layer contains only `PATH`, `NODE_VERSION`, `YARN_VERSION`, `NODE_ENV`, `PORT` - no `GEMINI_API_KEY` or any other secret. The key reaches the container only via `--env-file .env` at `docker run` time.
+
+`preliminary-v1` (digest `sha256:5e89151a1d7454715e2208351ba3fb92e3d57f94300df2aba5e44b72e4ab64aa`) remains on Docker Hub but is superseded - it predates the `/` landing page.
+
+## Publishing a new version
+
+To rebuild and publish an updated image (use a new tag - never overwrite `preliminary-v2`, the currently submitted tag, once it's been submitted):
 
 ```sh
 docker login
-docker build --platform linux/amd64 -t YOUR_DOCKERHUB_USERNAME/gridwise:preliminary-v1 .
-docker push YOUR_DOCKERHUB_USERNAME/gridwise:preliminary-v1
-docker pull YOUR_DOCKERHUB_USERNAME/gridwise:preliminary-v1
-docker run --rm --name gridwise -p 3000:3000 --env-file .env YOUR_DOCKERHUB_USERNAME/gridwise:preliminary-v1
+docker build --platform linux/amd64 -t ahmadzubayer/gridwise:NEW_TAG .
+docker push ahmadzubayer/gridwise:NEW_TAG
+docker rmi ahmadzubayer/gridwise:NEW_TAG --force
+docker pull ahmadzubayer/gridwise:NEW_TAG
+docker run --rm --name gridwise -p 3000:3000 --env-file .env ahmadzubayer/gridwise:NEW_TAG
 ```
 
-Recheck /health, then repeat the /optimize-energy smoke test above against the
-pulled image. Record these verified commands, runtime variable names, port,
-and image reference in README.md for submission. Keep the submitted tag
-unchanged; use a new tag for a subsequent release. A registry digest can also
-be submitted to identify the exact image contents.
+Force-removing the local image before the verification pull matters - without it, `docker run` can silently reuse a stale local build instead of proving the registry copy actually works. Recheck `/health`, repeat the `/optimize-energy` smoke test above, capture the new digest the same way, and update this file and README.md with the new reference.

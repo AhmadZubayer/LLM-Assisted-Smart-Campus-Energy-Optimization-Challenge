@@ -39,7 +39,20 @@ async function bootstrap() {
     ],
   });
 
-  app.getHttpAdapter().get('/', (_req, res) => res.redirect('/docs'));
+  app.getHttpAdapter().get('/', (_req, res) => {
+    res.status(200).type('html').send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GridWise LLM API</title>
+</head>
+<body style="font-family: system-ui, sans-serif; max-width: 640px; margin: 4rem auto; padding: 0 1rem;">
+  <h1>Team ThinkByte GridWise Server</h1>
+  <h2>LLM Assisted Smart Campus Energy Optimization</h2>
+  <p><a href="/docs">API documentation</a> &middot; <a href="/health">Health check</a></p>
+</body>
+</html>`);
+  });
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);

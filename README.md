@@ -119,7 +119,18 @@ npm run test:live     # OPTIONAL: real Gemini calls using GEMINI_API_KEY, all 10
 
 ## Docker
 
-See [DOCKER.md](DOCKER.md) for build, run, and publish commands, the full runtime variable table, and a container smoke-test. `docker build`/`run` were **not** verified in this development environment (Docker was not installed here) — the Dockerfile is unchanged from the working starter's multi-stage, non-root, health-checked structure, and only the runtime environment variables documented above are new.
+Fallback image, submitted and verified:
+
+```sh
+docker pull ahmadzubayer/gridwise:preliminary-v2
+docker run --rm --name gridwise -p 3000:3000 --env-file .env ahmadzubayer/gridwise:preliminary-v2
+curl http://localhost:3000/health
+```
+
+- **Digest:** `sha256:b55cfe43384614335c28a06e7062cb928913ecafe2b184b0c4f4a45f705e8af9`
+- Verified end to end: local image removed, pulled fresh from Docker Hub, `/health` returned `{"status":"ok"}` with Docker's own healthcheck reporting `healthy`, and a real `/optimize-energy` request against the organizer's SAMPLE-01 input returned the exact reference cost (38365 BDT). Confirmed via `docker inspect` that the image's baked-in `ENV` layer carries no secrets — `GEMINI_API_KEY` is supplied only through `--env-file .env` at `docker run` time.
+
+See [DOCKER.md](DOCKER.md) for the full runtime variable table, the local dev build loop, and how to publish a new version.
 
 ## Dependencies and credits
 
@@ -137,7 +148,6 @@ See [DOCKER.md](DOCKER.md) for build, run, and publish commands, the full runtim
 - **Rate-limit handling is not backoff-aware.** A `429` is treated like any other transient provider failure (consumes one shared retry) rather than reading the provider's suggested `retryDelay`; given the request-level deadline (`REQUEST_TIMEOUT_MS`), respecting a multi-second suggested delay would rarely fit anyway.
 - **Gemini's invalid-key error is 400, not 401/403.** Confirmed against the live API: an invalid `GEMINI_API_KEY` comes back as `400 INVALID_ARGUMENT` (reason `API_KEY_INVALID`), not the more conventional 401/403. The client checks for this specific case (plus 401/403 as a fallback) so a bad key fails fast without wasting a retry.
 - **Overlapping `solar_reduction` composition** is this implementation's own documented tie-break (most restrictive wins), not a rule stated in the organizer documents — see "LLM role, guardrails, and optimizer/solver" above.
-- **Docker image build/run** was not exercised locally (no Docker in this development environment); only static review of the Dockerfile/`.dockerignore` against the actual build output.
 
 ## Secret handling — no committed secrets
 
